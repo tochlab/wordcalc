@@ -12,10 +12,10 @@
 struct word_stat {
     char *word;
     unsigned int count;
+    struct word_stat *next;
 };
 
-struct word_stat **wordStat = NULL;
-unsigned int wordCount = 0;
+struct word_stat *wordlist_head = NULL;
 
 struct word_stat *stat_create(char *word) {
     struct word_stat *result = calloc(1, sizeof(struct word_stat));
@@ -24,12 +24,22 @@ struct word_stat *stat_create(char *word) {
 }
 
 struct word_stat *stat_exists(char *word) {
-    for(size_t i = 0;i<wordCount;i++) {
-        if(!strcmp(wordStat[i]->word, word)) {
-            return wordStat[i];
+    struct word_stat *current_word = wordlist_head;
+    while(current_word != NULL) {
+        if(!strcmp(current_word->word, word)) {
+            return current_word;
         }
+        current_word = current_word->next;
     }
     return NULL;
+}
+
+struct word_stat *get_last( void ) {
+    struct word_stat *current_word = wordlist_head;
+    while(current_word->next != NULL) {
+        current_word = current_word->next;
+    }
+    return current_word;
 }
 
 void add_to_stat(char *word) {
@@ -39,14 +49,18 @@ void add_to_stat(char *word) {
         word[i] = (char ) tolower(word[i]);
     }
     struct word_stat *ws = stat_exists(word);
-    if(ws != NULL) {
-        ws->count++;
-    } else {
-        wordStat = realloc(wordStat, (wordCount + 1) * sizeof(struct word_stat**));
-        wordStat[wordCount] = stat_create(word);
-        wordStat[wordCount]->count = 1;
-        wordCount++;
+
+    if(ws == NULL) {
+        ws = stat_create(word);
+        if(wordlist_head == NULL) {
+            wordlist_head = ws;
+        } else {
+            struct word_stat *last = get_last();
+            last->next = ws;
+        }
     }
+
+    ws->count++;
 }
 
 bool isdelim(char c) {
@@ -90,23 +104,36 @@ int main() {
 
     bool swapped = false;
     do {
+        struct word_stat *current = wordlist_head;
         swapped = false;
-        for(size_t i = 0;i<wordCount-1;i++) {
-            if(wordStat[i]->count < wordStat[i+1]->count) {
-                struct word_stat *tmp = wordStat[i];
-                wordStat[i] = wordStat[i+1];
-                wordStat[i+1] = tmp;
+        while(current->next != NULL) {
+            if(current->next->count > current->count) {
                 swapped = true;
+                char *word = current->word;
+                size_t cnt = current->count;
+                current->word = current->next->word;
+                current->count = current->next->count;
+                current->next->word = word;
+                current->next->count = cnt;
                 break;
             }
+            current = current->next;
         }
     }
     while(swapped);
 
-    for( size_t i = 0;i<wordCount;i++ ) {
-        printf("%25.25s %d\n", wordStat[i]->word, wordStat[i]->count);
-        free(wordStat[i]->word);
-        free(wordStat[i]);
+    struct word_stat *current = wordlist_head;
+    while(current->next != NULL) {
+        printf("%25.25s %d\n", current->word, current->count);
+        current = current->next;
     }
+
+    while (current != NULL) {
+        struct word_stat *next = current->next;
+        free(current->word);
+        free(current);
+        current = next;
+    }
+
     return 0;
 }
