@@ -128,6 +128,7 @@ int main() {
         current = current->next;
     }
 
+    current = wordlist_head;
     while (current != NULL) {
         struct word_stat *next = current->next;
         free(current->word);
