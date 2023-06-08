@@ -34,14 +34,6 @@ struct word_stat *stat_exists(char *word) {
     return NULL;
 }
 
-struct word_stat *get_last( void ) {
-    struct word_stat *current_word = wordlist_head;
-    while(current_word->next != NULL) {
-        current_word = current_word->next;
-    }
-    return current_word;
-}
-
 void add_to_stat(char *word) {
     size_t i = 0;
     size_t slen = strlen(word);
@@ -52,12 +44,8 @@ void add_to_stat(char *word) {
 
     if(ws == NULL) {
         ws = stat_create(word);
-        if(wordlist_head == NULL) {
-            wordlist_head = ws;
-        } else {
-            struct word_stat *last = get_last();
-            last->next = ws;
-        }
+        ws->next = wordlist_head;
+        wordlist_head = ws;
     }
 
     ws->count++;
